@@ -1,0 +1,24 @@
+{
+  "name": "pb-agent",
+  "version": "0.0.0-development",
+  "description": "Safe, agent-first PocketBase operations",
+  "license": "Apache-2.0",
+  "repository": "github:anirudh-777/pb-agent",
+  "bin": {
+    "pb-agent": "bin/pb-agent.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "pb-agent-darwin-arm64": "0.0.0-development",
+    "pb-agent-darwin-x64": "0.0.0-development",
+    "pb-agent-linux-arm64": "0.0.0-development",
+    "pb-agent-linux-x64": "0.0.0-development",
+    "pb-agent-win32-arm64": "0.0.0-development",
+    "pb-agent-win32-x64": "0.0.0-development"
+  }
+}
