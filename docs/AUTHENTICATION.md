@@ -21,21 +21,31 @@ You can print the same instructions from the CLI:
 pb-agent --human connection token-help
 ```
 
-## Store the token
+## Connect
 
-Place the token in a temporary environment variable, then pipe it through
-standard input:
+Run one command and paste the token into the hidden prompt:
 
 ```sh
-printf '%s' "$POCKETBASE_SUPERUSER_TOKEN" | pb-agent connection add \
-  --name local \
-  --url http://127.0.0.1:8090 \
-  --environment development \
-  --token-stdin
+pb-agent connection add http://127.0.0.1:8090
 ```
 
-The token is stored in the operating system credential manager. It is not
-written to `pb-agent.yaml`, command history, output, plans, or audit records.
+The command defaults to a connection named `default` in the `dev` environment.
+It verifies PocketBase health and authenticated collection access before
+creating `pb-agent.yaml` and storing the token in the operating system
+credential manager.
+
+Use `--name` to add another connection. The accepted environments are `dev`,
+`test`, `stage`, and `prod`.
+
+For non-interactive automation, pipe the token through standard input:
+
+```sh
+printf '%s' "$POCKETBASE_SUPERUSER_TOKEN" |
+  pb-agent connection add https://pb.example.com --token-stdin
+```
+
+The token is never written to `pb-agent.yaml`, command history, output, plans,
+or audit records.
 
 For CI, provide the token through the secret environment variable
 `PB_AGENT_TOKEN`. Do not run `connection add` in CI.
@@ -46,6 +56,8 @@ For CI, provide the token through the secret environment variable
 - Use the shortest token duration that fits the workflow.
 - Never pass a token as a command argument.
 - Never commit a token or place it in `pb-agent.yaml`.
+- Never send a token to a public `http://` URL. pb-agent rejects public
+  plaintext HTTP connections; use HTTPS.
 - Changing the dedicated superuser password invalidates tokens issued for that
   superuser.
 - Changing the shared `_superusers` token secret invalidates issued tokens for
