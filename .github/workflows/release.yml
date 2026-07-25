@@ -38,10 +38,16 @@ jobs:
       - name: Build npm packages
         run: node scripts/package-npm.mjs "${GITHUB_REF_NAME#v}"
       - name: Publish native npm packages
+        if: ${{ env.NODE_AUTH_TOKEN != '' }}
         run: |
           for package_dir in dist/npm/pb-agent-*; do
             npm publish "$package_dir" --access public --provenance
           done
           npm publish dist/npm/pb-agent --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Report skipped npm publishing
+        if: ${{ env.NODE_AUTH_TOKEN == '' }}
+        run: echo "::notice::NPM_TOKEN is not configured; GitHub release artifacts were published without npm packages."
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
