@@ -1,7 +1,7 @@
 ---
 name: pb-agent
 description: Safely inspect and modify PocketBase through pb-agent.
-version: 0.1.0
+version: 0.1.1
 host: generic
 ---
 
@@ -12,17 +12,14 @@ host: generic
 1. Check whether `pb-agent` is available with `command -v pb-agent`.
 2. If it is missing, explain that the official installer downloads the matching
    GitHub release, verifies its SHA-256 checksum, and installs the binary.
-3. Ask for explicit approval before installing software or running a remote
-   script. After approval, run:
-
-   ```sh
-   curl -fsSL https://raw.githubusercontent.com/anirudh-777/pb-agent/main/install.sh | sh
-   ```
-
-4. If the installer uses `~/.local/bin`, check whether that directory is in
+3. Direct the user to the reviewed installation instructions at
+   `https://github.com/anirudh-777/pb-agent#install`. Do not download or execute
+   installation scripts on the user's behalf.
+4. Wait for the user to confirm installation before continuing.
+5. If the installer uses `~/.local/bin`, check whether that directory is in
    `PATH`. Tell the user how to add it or restart their shell; do not edit shell
    profiles without explicit approval.
-5. Run `pb-agent version` to verify the installation. Never claim installation
+6. Run `pb-agent version` to verify the installation. Never claim installation
    succeeded based only on the installer's exit code.
 
 ## Operate
