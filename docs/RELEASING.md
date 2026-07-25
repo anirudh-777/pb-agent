@@ -19,9 +19,11 @@
 1. Confirm `main` is green in CI and PocketBase compatibility checks.
 2. Run `go test -race ./...`, `go vet ./...`, and `govulncheck ./...`.
 3. Create and push an annotated SemVer tag such as `v0.1.0`.
-4. Verify the GitHub release contains six archives, checksums, SBOMs, a
-   Sigstore bundle, and provenance.
-5. Install through npm, Homebrew, Scoop, and a release archive in clean
+4. Verify the GitHub release contains six archives, checksums, SBOMs, the
+   installer, a Sigstore bundle, and provenance.
+5. Run the installer against the new tag in a clean macOS or Linux environment:
+   `PB_AGENT_VERSION=vX.Y.Z sh install.sh`.
+6. Install through npm, Homebrew, Scoop, and a release archive in clean
    environments.
 
 Prereleases can be published to GitHub without package-manager credentials.

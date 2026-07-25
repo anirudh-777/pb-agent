@@ -10,7 +10,25 @@ local audit evidence.
 
 ## Install
 
-Until the first public release, build from source:
+Install the latest GitHub release on macOS or Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/anirudh-777/pb-agent/main/install.sh | sh
+```
+
+The installer detects the current platform, verifies the release archive
+against its published SHA-256 checksum, and installs to `/usr/local/bin` when
+writable or `~/.local/bin` otherwise.
+
+To pin a version or choose the destination:
+
+```sh
+PB_AGENT_VERSION=v0.1.0-rc.4 \
+PB_AGENT_INSTALL_DIR="$HOME/.local/bin" \
+  sh install.sh
+```
+
+You can also build from source:
 
 ```sh
 go install github.com/anirudh-777/pb-agent/cmd/pb-agent@latest
@@ -25,6 +43,15 @@ npm install -g pb-agent
 brew install anirudh-777/tap/pb-agent
 scoop install pb-agent
 ```
+
+Install the agent skill separately in supported coding agents:
+
+```sh
+npx skills add anirudh-777/pb-agent --skill pb-agent -g -y
+```
+
+The skill teaches an agent the safe workflow; the installer above provides the
+`pb-agent` executable it invokes.
 
 ## Quick start
 

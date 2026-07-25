@@ -57,3 +57,13 @@ jobs:
       - run: node --check npm/pb-agent/bin/pb-agent.js
       - run: node scripts/package-npm.mjs 0.0.0-ci
       - run: npm pack --dry-run ./dist/npm/pb-agent
+
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh -n install.sh
+      - name: Install the current prerelease
+        run: |
+          PB_AGENT_INSTALL_DIR="$RUNNER_TEMP/pb-agent-bin" sh install.sh v0.1.0-rc.4
+          "$RUNNER_TEMP/pb-agent-bin/pb-agent" version

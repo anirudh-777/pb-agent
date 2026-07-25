@@ -41,6 +41,8 @@ changelog:
 
 release:
   prerelease: auto
+  extra_files:
+    - glob: install.sh
 
 homebrew_casks:
   - name: pb-agent
