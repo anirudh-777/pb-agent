@@ -155,7 +155,7 @@ img {
   grid-template-columns: minmax(0, 1.08fr) minmax(330px, 0.92fr);
   gap: clamp(2rem, 5vw, 5.5rem);
   align-items: center;
-  padding-block: clamp(5rem, 10vw, 8.5rem) clamp(4rem, 8vw, 7rem);
+  padding-block: clamp(4.5rem, 8.5vw, 7.25rem) clamp(3.5rem, 6.5vw, 5.75rem);
 }
 
 .eyebrow {
@@ -310,7 +310,7 @@ h1 {
 }
 
 .section {
-  padding-block: clamp(4.8rem, 9vw, 8rem);
+  padding-block: clamp(4rem, 7vw, 6.5rem);
 }
 
 .section-heading {
