@@ -36,9 +36,10 @@ func TestTokenHelpExplainsGenerationAndSafeStorage(t *testing.T) {
 	}
 	var result struct {
 		Data struct {
-			DashboardSteps []string `json:"dashboardSteps"`
-			Documentation  string   `json:"documentation"`
-			StoreCommand   string   `json:"storeCommand"`
+			DashboardSteps    []string `json:"dashboardSteps"`
+			Documentation     string   `json:"documentation"`
+			StoreCommand      string   `json:"storeCommand"`
+			AutomationCommand string   `json:"automationCommand"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
@@ -47,7 +48,9 @@ func TestTokenHelpExplainsGenerationAndSafeStorage(t *testing.T) {
 	if len(result.Data.DashboardSteps) < 4 {
 		t.Fatalf("missing dashboard instructions: %#v", result.Data)
 	}
-	if result.Data.Documentation == "" || !strings.Contains(result.Data.StoreCommand, "--token-stdin") {
+	if result.Data.Documentation == "" ||
+		result.Data.StoreCommand != "pb-agent connection add URL" ||
+		!strings.Contains(result.Data.AutomationCommand, "--token-stdin") {
 		t.Fatalf("missing safe token guidance: %#v", result.Data)
 	}
 }
@@ -72,6 +75,118 @@ func TestTokenHelpHumanOutput(t *testing.T) {
 	}
 	if strings.Contains(got, `"schemaVersion"`) {
 		t.Fatalf("human output contains JSON envelope:\n%s", got)
+	}
+}
+
+func TestConnectionAddHelpShowsSimpleUsage(t *testing.T) {
+	var stdout bytes.Buffer
+	code := Run([]string{"connection", "add", "--help"}, bytes.NewBuffer(nil), &stdout, &bytes.Buffer{})
+	if code != 0 {
+		t.Fatalf("exit code = %d, output = %s", code, stdout.String())
+	}
+	got := stdout.String()
+	for _, expected := range []string{"pb-agent connection add URL", "--name", "--environment", "--token-stdin"} {
+		if !strings.Contains(got, expected) {
+			t.Fatalf("help output missing %q:\n%s", expected, got)
+		}
+	}
+	if strings.Contains(got, "--url") {
+		t.Fatalf("help output contains removed --url flag:\n%s", got)
+	}
+}
+
+func TestConnectionAddBootstrapsConfigAndVerifiesToken(t *testing.T) {
+	var authorization string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorization = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/health":
+			_, _ = w.Write([]byte(`{"message":"API is healthy."}`))
+		case "/api/collections":
+			_, _ = w.Write([]byte(`{"page":1,"perPage":1,"totalItems":0,"totalPages":0,"items":[]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, config.FileName)
+	var savedReference, savedToken string
+	var stdout bytes.Buffer
+	a := &app{
+		stdin:  strings.NewReader("secret-token\n"),
+		stdout: &stdout,
+		stderr: &bytes.Buffer{},
+		saveCredential: func(reference, token string) error {
+			savedReference, savedToken = reference, token
+			return nil
+		},
+	}
+	code := a.execute([]string{"--config", cfgPath, "connection", "add", server.URL, "--environment", "dev", "--token-stdin"})
+	if code != 0 {
+		t.Fatalf("exit code = %d, output = %s", code, stdout.String())
+	}
+	if authorization != "secret-token" {
+		t.Fatalf("authorization = %q", authorization)
+	}
+	if savedReference != "default" || savedToken != "secret-token" {
+		t.Fatalf("saved credential = %q, %q", savedReference, savedToken)
+	}
+	cfg, err := config.Load(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	connection := cfg.Connections["default"]
+	if connection.URL != server.URL || connection.Environment != "development" {
+		t.Fatalf("unexpected connection: %#v", connection)
+	}
+	var result struct {
+		Data struct {
+			Verified bool `json:"verified"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if !result.Data.Verified {
+		t.Fatalf("connection was not reported as verified: %s", stdout.String())
+	}
+}
+
+func TestConnectionAddDoesNotPersistUnverifiedToken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/api/health" {
+			_, _ = w.Write([]byte(`{"message":"API is healthy."}`))
+			return
+		}
+		http.Error(w, `{"message":"authentication required"}`, http.StatusUnauthorized)
+	}))
+	defer server.Close()
+
+	cfgPath := filepath.Join(t.TempDir(), config.FileName)
+	saved := false
+	var stdout bytes.Buffer
+	a := &app{
+		stdin:  strings.NewReader("bad-token\n"),
+		stdout: &stdout,
+		stderr: &bytes.Buffer{},
+		saveCredential: func(_, _ string) error {
+			saved = true
+			return nil
+		},
+	}
+	code := a.execute([]string{"--config", cfgPath, "connection", "add", server.URL, "--token-stdin"})
+	if code == 0 {
+		t.Fatalf("expected verification failure: %s", stdout.String())
+	}
+	if saved {
+		t.Fatal("unverified credential was saved")
+	}
+	if _, err := os.Stat(cfgPath); !os.IsNotExist(err) {
+		t.Fatalf("config should not exist after verification failure: %v", err)
 	}
 }
 

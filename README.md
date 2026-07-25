@@ -61,21 +61,19 @@ The skill teaches an agent the safe workflow; the installer above provides the
 ## Quick start
 
 ```sh
-pb-agent init --name local --url http://127.0.0.1:8090 --environment development
 pb-agent --human connection token-help
-printf '%s' "$POCKETBASE_SUPERUSER_TOKEN" | pb-agent connection add \
-  --name local \
-  --url http://127.0.0.1:8090 \
-  --environment development \
-  --token-stdin
+pb-agent connection add http://127.0.0.1:8090
 
-pb-agent --connection local doctor
-pb-agent --connection local records list --collection posts
+pb-agent doctor
+pb-agent records list --collection posts
 ```
 
 To generate the token, open the PocketBase Dashboard, select
 **Collections → `_superusers` → your dedicated superuser → Impersonate**, and
-choose the shortest practical duration. See
+choose the shortest practical duration. `connection add` prompts for the token
+with hidden input, verifies it, stores it in the OS keychain, and creates
+`pb-agent.yaml`. Use `--name` for additional connections and `--environment`
+with `dev`, `test`, `stage`, or `prod` when the default is not appropriate. See
 [PocketBase authentication](docs/AUTHENTICATION.md) for complete generation,
 storage, CI, and revocation instructions.
 

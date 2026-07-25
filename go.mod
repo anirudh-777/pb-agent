@@ -5,6 +5,7 @@ go 1.26.5
 require (
 	github.com/spf13/cobra v1.10.1
 	github.com/zalando/go-keyring v0.2.6
+	golang.org/x/term v0.25.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

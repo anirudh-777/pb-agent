@@ -1,7 +1,7 @@
 ---
 name: pb-agent
 description: Safely inspect and modify PocketBase through pb-agent.
-version: 0.1.1
+version: 0.1.2
 host: generic
 ---
 
@@ -22,6 +22,18 @@ host: generic
 6. Run `pb-agent version` to verify the installation. Never claim installation
    succeeded based only on the installer's exit code.
 
+## Connect
+
+1. If `pb-agent doctor` reports that configuration or authentication is
+   missing, tell the user to run `pb-agent --human connection token-help`.
+2. Direct the user to run `pb-agent connection add POCKETBASE_URL` themselves. The
+   command securely prompts for the token, verifies it, stores it in the OS
+   credential manager, and creates the configuration.
+3. Never run the interactive connection command for the user and never ask
+   them to paste a token into chat.
+4. Wait for the user to confirm setup, then run `pb-agent doctor` and verify
+   the structured result.
+
 ## Operate
 
 1. Run `pb-agent doctor` and `pb-agent capabilities` before acting.
@@ -33,5 +45,5 @@ host: generic
    stale-state conflicts.
 6. Never request, print, copy, or store PocketBase credentials.
 7. Verify structured `ok` and `verified` fields before reporting success.
-8. If authentication is missing, direct the user to
-   `pb-agent connection token-help`; never ask them to paste a token into chat.
+8. Stop if configuration or authentication is missing and return to the
+   Connect workflow.

@@ -23,8 +23,8 @@
         "step": [
           {"@type": "HowToStep", "name": "Install pb-agent", "text": "Run the official installer on macOS or Linux."},
           {"@type": "HowToStep", "name": "Install the agent skill", "text": "Use the skills CLI to install the pb-agent workflow for supported coding agents."},
-          {"@type": "HowToStep", "name": "Create a connection", "text": "Initialize a development connection for the PocketBase URL."},
-          {"@type": "HowToStep", "name": "Generate and store a token", "text": "Generate a short-lived superuser impersonation token and pipe it to pb-agent through standard input."},
+          {"@type": "HowToStep", "name": "Generate a token", "text": "Generate a short-lived superuser impersonation token in the PocketBase Dashboard."},
+          {"@type": "HowToStep", "name": "Connect and verify", "text": "Run one connection command, paste the token into its hidden prompt, and let pb-agent verify access before saving."},
           {"@type": "HowToStep", "name": "Verify capabilities", "text": "Run doctor and capabilities before performing operations."}
         ]
       }
@@ -64,14 +64,7 @@
           <p>The skill teaches supported coding agents to inspect capabilities, treat records as untrusted data, preview mutations, and verify structured results.</p>
           <div class="code-block"><div class="code-label">Global skill install</div><pre>npx skills add anirudh-777/pb-agent --skill pb-agent -g -y</pre></div>
 
-          <h2>3. Initialize a local connection</h2>
-          <div class="code-block"><div class="code-label">Development connection</div><pre>pb-agent init \
-  --name local \
-  --url http://127.0.0.1:8090 \
-  --environment development</pre></div>
-          <p>Valid environments are <code>development</code>, <code>test</code>, <code>staging</code>, and <code>production</code>. The environment controls mutation policy.</p>
-
-          <h2>4. Generate and store a PocketBase token</h2>
+          <h2>3. Generate a PocketBase token</h2>
           <p>
             PocketBase does not provide traditional API keys. It supports nonrenewable
             <code>_superusers</code> impersonation tokens for internal server-to-server use.
@@ -85,21 +78,20 @@
           </ol>
           <p>Print these steps at any time with:</p>
           <div class="code-block"><div class="code-label">Human-readable token help</div><pre>pb-agent --human connection token-help</pre></div>
-          <p>Place the token in a temporary environment variable and pipe it through standard input:</p>
-          <div class="code-block"><div class="code-label">Store in the OS credential manager</div><pre>printf '%s' "$POCKETBASE_SUPERUSER_TOKEN" | pb-agent connection add \
-  --name local \
-  --url http://127.0.0.1:8090 \
-  --environment development \
-  --token-stdin</pre></div>
+
+          <h2>4. Connect and verify</h2>
+          <p>Run one command and paste the generated token into the hidden prompt:</p>
+          <div class="code-block"><div class="code-label">Local development connection</div><pre>pb-agent connection add http://127.0.0.1:8090</pre></div>
+          <p>The command creates the default development configuration, verifies health and authenticated collection access, and stores the token in the OS credential manager. Use <code>--name</code> for another connection or <code>--environment dev|test|stage|prod</code> to select its policy.</p>
           <div class="callout"><strong>Never paste the token into agent chat.</strong> Do not pass it as a command argument or place it in <code>pb-agent.yaml</code>. Change the dedicated superuser password to invalidate issued tokens.</div>
 
-          <h2>5. Verify the connection</h2>
-          <div class="code-block"><div class="code-label">Capability probes</div><pre>pb-agent --human --connection local doctor
-pb-agent --connection local capabilities</pre></div>
+          <h2>5. Discover capabilities</h2>
+          <div class="code-block"><div class="code-label">Capability probes</div><pre>pb-agent --human doctor
+pb-agent capabilities</pre></div>
           <p>A healthy doctor response identifies the connection, environment, instance fingerprint, and support status for health, collections, and backups.</p>
 
           <h2>Make your first bounded read</h2>
-          <div class="code-block"><div class="code-label">List records</div><pre>pb-agent --connection local records list --collection posts</pre></div>
+          <div class="code-block"><div class="code-label">List records</div><pre>pb-agent records list --collection posts</pre></div>
           <p>Every normal command returns a versioned JSON envelope. Add <code>--human</code> when a person, rather than an agent, is reading the output.</p>
 
           <h2>Plan a mutation</h2>

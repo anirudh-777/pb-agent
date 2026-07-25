@@ -65,8 +65,7 @@ pb-agent --connection local doctor</pre></div>
 
           <h2>Connection and diagnostics</h2>
           <ul>
-            <li><strong>init</strong>: Create a local configuration with one named connection.</li>
-            <li><strong>connection add</strong>: Store a connection and optionally read its token from stdin.</li>
+            <li><strong>connection add URL</strong>: Securely prompt for a token, verify it, store it in the OS credential manager, and create or update the configuration.</li>
             <li><strong>connection token-help</strong>: Print human and machine-readable token generation guidance.</li>
             <li><strong>doctor</strong>: Check health and probe the collections and backups capabilities.</li>
             <li><strong>capabilities</strong>: Return the implemented reads, mutations, deferred work, and approval model.</li>
