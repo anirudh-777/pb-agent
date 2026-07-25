@@ -18,7 +18,8 @@ builds:
         -X github.com/anirudh-777/pb-agent/internal/version.Date={{ .Date }}
 
 archives:
-  - formats: [tar.gz]
+  - id: pb-agent
+    formats: [tar.gz]
     format_overrides:
       - goos: windows
         formats: [zip]
