@@ -48,6 +48,7 @@ homebrew_casks:
     homepage: https://github.com/anirudh-777/pb-agent
     description: Safe, agent-first PocketBase operations
     license: Apache-2.0
+    skip_upload: auto
 
 scoops:
   - name: pb-agent
@@ -58,3 +59,4 @@ scoops:
     homepage: https://github.com/anirudh-777/pb-agent
     description: Safe, agent-first PocketBase operations
     license: Apache-2.0
+    skip_upload: auto

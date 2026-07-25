@@ -2,10 +2,12 @@
 
 ## Prerequisites
 
-- Create public repositories `anirudh-777/homebrew-tap` and
-  `anirudh-777/scoop-bucket`.
-- Add repository secrets `HOMEBREW_TAP_TOKEN`, `SCOOP_BUCKET_TOKEN`, and
-  `NPM_TOKEN`.
+- The public repositories `anirudh-777/homebrew-tap` and
+  `anirudh-777/scoop-bucket` must exist.
+- Add repository secrets `HOMEBREW_TAP_TOKEN` and `SCOOP_BUCKET_TOKEN` before
+  publishing stable releases. Prerelease tags skip both package repositories.
+- Add repository secret `NPM_TOKEN` to publish npm packages. Without it, the
+  release still publishes GitHub artifacts and reports that npm was skipped.
 - Configure Apple code signing and notarization before advertising the
   Homebrew cask as a stable macOS installation path. Sigstore verification
   does not replace Gatekeeper notarization.
@@ -22,5 +24,6 @@
 5. Install through npm, Homebrew, Scoop, and a release archive in clean
    environments.
 
-Never create a release tag until every prerequisite secret and repository is
-configured; the release workflow intentionally fails closed.
+Prereleases can be published to GitHub without package-manager credentials.
+Before creating a stable release tag, configure every prerequisite secret and
+verify all advertised installation paths.

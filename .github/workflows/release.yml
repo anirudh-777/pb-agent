@@ -37,8 +37,12 @@ jobs:
           subject-path: dist/checksums.txt
       - name: Build npm packages
         run: node scripts/package-npm.mjs "${GITHUB_REF_NAME#v}"
-      - name: Publish native npm packages
+      - name: Publish npm packages when configured
         run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::notice::NPM_TOKEN is not configured; GitHub release artifacts were published without npm packages."
+            exit 0
+          fi
           for package_dir in dist/npm/pb-agent-*; do
             npm publish "$package_dir" --access public --provenance
           done
