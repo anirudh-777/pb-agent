@@ -1,0 +1,6 @@
+.DS_Store
+dist/
+coverage.out
+pb-agent
+pb-agent.yaml
+*.test

@@ -1,0 +1,60 @@
+version: 2
+
+project_name: pb-agent
+
+builds:
+  - id: pb-agent
+    main: ./cmd/pb-agent
+    binary: pb-agent
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - >-
+        -s -w
+        -X github.com/anirudh-777/pb-agent/internal/version.Version={{ .Version }}
+        -X github.com/anirudh-777/pb-agent/internal/version.Commit={{ .Commit }}
+        -X github.com/anirudh-777/pb-agent/internal/version.Date={{ .Date }}
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "pb-agent_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+sboms:
+  - artifacts: archive
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+homebrew_casks:
+  - name: pb-agent
+    ids: [pb-agent]
+    repository:
+      owner: anirudh-777
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    homepage: https://github.com/anirudh-777/pb-agent
+    description: Safe, agent-first PocketBase operations
+    license: Apache-2.0
+
+scoops:
+  - name: pb-agent
+    repository:
+      owner: anirudh-777
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_BUCKET_TOKEN }}"
+    homepage: https://github.com/anirudh-777/pb-agent
+    description: Safe, agent-first PocketBase operations
+    license: Apache-2.0

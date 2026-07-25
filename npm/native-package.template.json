@@ -1,0 +1,10 @@
+{
+  "name": "pb-agent-{{ platform }}-{{ arch }}",
+  "version": "{{ version }}",
+  "description": "Native {{ platform }} {{ arch }} binary for pb-agent",
+  "license": "Apache-2.0",
+  "repository": "github:anirudh-777/pb-agent",
+  "os": ["{{ platform }}"],
+  "cpu": ["{{ arch }}"],
+  "files": ["bin"]
+}

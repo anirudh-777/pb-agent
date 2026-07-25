@@ -1,0 +1,64 @@
+name: PocketBase compatibility
+
+on:
+  schedule:
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        pocketbase: ["0.39.8", "latest"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.5"
+      - name: Resolve PocketBase version
+        run: |
+          if [ "${{ matrix.pocketbase }}" = "latest" ]; then
+            version="$(curl -fsS https://api.github.com/repos/pocketbase/pocketbase/releases/latest | jq -r '.tag_name | ltrimstr("v")')"
+          else
+            version="${{ matrix.pocketbase }}"
+          fi
+          echo "PB_VERSION=$version" >> "$GITHUB_ENV"
+      - name: Download PocketBase baseline
+        run: |
+          curl -fsSLO "https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip"
+          unzip "pocketbase_${PB_VERSION}_linux_amd64.zip" -d /tmp/pocketbase
+      - name: Start PocketBase
+        run: |
+          /tmp/pocketbase/pocketbase superuser create ci@example.test 'pb-agent-ci-password' --dir=/tmp/pb_data
+          /tmp/pocketbase/pocketbase serve --http=127.0.0.1:8090 --dir=/tmp/pb_data >/tmp/pocketbase.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8090/api/health >/dev/null 2>&1 && break
+            sleep 1
+          done
+      - name: Authenticate and run doctor
+        run: |
+          token="$(curl -fsS http://127.0.0.1:8090/api/collections/_superusers/auth-with-password \
+            -H 'content-type: application/json' \
+            --data '{"identity":"ci@example.test","password":"pb-agent-ci-password"}' | jq -r .token)"
+          go build -o /tmp/pb-agent ./cmd/pb-agent
+          /tmp/pb-agent init --name baseline --url http://127.0.0.1:8090 --environment test
+          PB_AGENT_TOKEN="$token" /tmp/pb-agent --connection baseline doctor
+      - name: Exercise plan and apply
+        run: |
+          token="$(curl -fsS http://127.0.0.1:8090/api/collections/_superusers/auth-with-password \
+            -H 'content-type: application/json' \
+            --data '{"identity":"ci@example.test","password":"pb-agent-ci-password"}' | jq -r .token)"
+          printf '%s\n' '{"type":"base","name":"pb_agent_notes","fields":[{"name":"title","type":"text","required":true}]}' >/tmp/collection.json
+          collection_plan="$(PB_AGENT_TOKEN="$token" /tmp/pb-agent --connection baseline plan collection-create --data-file /tmp/collection.json | jq -r .data.id)"
+          PB_AGENT_TOKEN="$token" /tmp/pb-agent --connection baseline apply --plan "$collection_plan"
+
+          printf '%s\n' '{"title":"compatibility check"}' >/tmp/record.json
+          record_plan="$(PB_AGENT_TOKEN="$token" /tmp/pb-agent --connection baseline plan record-create --collection pb_agent_notes --data-file /tmp/record.json | jq -r .data.id)"
+          PB_AGENT_TOKEN="$token" /tmp/pb-agent --connection baseline apply --plan "$record_plan"
+
+          PB_AGENT_TOKEN="$token" /tmp/pb-agent --connection baseline records list --collection pb_agent_notes |
+            jq -e '.ok == true and .data.totalItems == 1'

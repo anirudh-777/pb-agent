@@ -1,0 +1,6 @@
+version: 1
+connections:
+  local:
+    url: http://127.0.0.1:8090
+    environment: development
+    credential: local
