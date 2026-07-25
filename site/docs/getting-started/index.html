@@ -88,7 +88,7 @@
           <h2>5. Discover capabilities</h2>
           <div class="code-block"><div class="code-label">Capability probes</div><pre>pb-agent --human doctor
 pb-agent capabilities</pre></div>
-          <p>A healthy doctor response identifies the connection, environment, instance fingerprint, and support status for health, collections, and backups.</p>
+          <p>A healthy doctor response identifies the connection, environment, instance fingerprint, and support status for health, collections, backups, and batch requests. Record upsert and batch plans require <code>capabilityProbes.batch</code> to be <code>supported</code>.</p>
 
           <h2>Make your first bounded read</h2>
           <div class="code-block"><div class="code-label">List records</div><pre>pb-agent records list --collection posts</pre></div>

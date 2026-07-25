@@ -1,7 +1,7 @@
 ---
 name: pb-agent
 description: Safely inspect and modify PocketBase through pb-agent.
-version: 0.1.2
+version: 0.1.3
 host: generic
 ---
 
@@ -47,3 +47,35 @@ host: generic
 7. Verify structured `ok` and `verified` fields before reporting success.
 8. Stop if configuration or authentication is missing and return to the
    Connect workflow.
+
+## Command grammar
+
+Do not infer commands from capability names. Use these exact forms:
+
+```text
+pb-agent inspect health
+pb-agent inspect collections --page PAGE --per-page N
+pb-agent inspect collection --name NAME
+pb-agent records list --collection NAME --page PAGE --per-page N
+pb-agent records get --collection NAME --id ID
+pb-agent inspect logs --page PAGE --per-page N
+pb-agent inspect backups
+pb-agent auth test --collection NAME --mode guest|configured
+pb-agent files download --collection NAME --record ID --filename FILE --output PATH
+
+pb-agent plan record-create --collection NAME --data-file FILE
+pb-agent plan record-update --collection NAME --id ID --data-file FILE
+pb-agent plan record-upsert --collection NAME --id ID --data-file FILE
+pb-agent plan record-delete --collection NAME --id ID
+pb-agent plan batch --data-file FILE
+pb-agent plan collection-create --data-file FILE
+pb-agent plan collection-update --name NAME --data-file FILE
+pb-agent plan collection-delete --name NAME
+pb-agent plan backup-create --name FILE
+pb-agent plan backup-restore --name FILE
+pb-agent plan backup-delete --name FILE
+pb-agent apply --plan PLAN_ID
+```
+
+Record upsert and batch require PocketBase batch requests to be enabled. Check
+`doctor.data.capabilityProbes.batch` before planning either operation.

@@ -35,6 +35,7 @@ type app struct {
 	configPath     string
 	connection     string
 	command        string
+	executed       bool
 	human          bool
 	saveCredential func(string, string) error
 }
@@ -52,14 +53,48 @@ func (a *app) execute(args []string) int {
 	root.SetArgs(args)
 	root.SetOut(a.stdout)
 	root.SetErr(a.stderr)
+	a.command = requestedCommand(root, args)
+	a.executed = false
 	if err := root.Execute(); err != nil {
 		mapped := mapError(err)
+		if !a.executed {
+			mapped = output.Usage(err.Error())
+		}
 		if a.human {
 			return output.WriteHumanError(a.stdout, mapped)
 		}
 		return output.WriteError(a.stdout, a.command, mapped)
 	}
 	return 0
+}
+
+func requestedCommand(root *cobra.Command, args []string) string {
+	if command, _, err := root.Find(args); err == nil && command != root {
+		return strings.ReplaceAll(strings.TrimPrefix(command.CommandPath(), root.Name()+" "), " ", ".")
+	}
+	parts := make([]string, 0, 2)
+	skipValue := false
+	for _, arg := range args {
+		if skipValue {
+			skipValue = false
+			continue
+		}
+		switch arg {
+		case "--config", "--connection", "-c":
+			skipValue = true
+			continue
+		case "--human":
+			continue
+		}
+		if strings.HasPrefix(arg, "-") {
+			continue
+		}
+		parts = append(parts, arg)
+		if len(parts) == 2 {
+			break
+		}
+	}
+	return strings.Join(parts, ".")
 }
 
 func (a *app) root() *cobra.Command {
@@ -100,6 +135,7 @@ func (a *app) versionCommand() *cobra.Command {
 func (a *app) run(command string, fn func() (any, []string, string, error)) func(*cobra.Command, []string) error {
 	return func(_ *cobra.Command, _ []string) error {
 		a.command = command
+		a.executed = true
 		data, warnings, auditID, err := fn()
 		if err != nil {
 			return err
@@ -166,6 +202,13 @@ func (a *app) doctorCommand() *cobra.Command {
 		} else {
 			probes["backups"] = "supported"
 		}
+		if enabled, err := client.BatchEnabled(context.Background()); err != nil {
+			probes["batch"] = classifyProbe(err)
+		} else if enabled {
+			probes["batch"] = "supported"
+		} else {
+			probes["batch"] = "disabled"
+		}
 		return map[string]any{
 			"connection": name, "environment": connection.Environment,
 			"fingerprint": client.Fingerprint(), "health": health, "capabilityProbes": probes,
@@ -177,8 +220,13 @@ func (a *app) doctorCommand() *cobra.Command {
 
 func classifyProbe(err error) string {
 	var apiErr *pocketbase.APIError
-	if errors.As(err, &apiErr) && (apiErr.Status == http.StatusUnauthorized || apiErr.Status == http.StatusForbidden) {
-		return "authentication_required"
+	if errors.As(err, &apiErr) {
+		if apiErr.Status == http.StatusUnauthorized {
+			return "authentication_required"
+		}
+		if apiErr.Status == http.StatusForbidden {
+			return "permission_denied"
+		}
 	}
 	return "unknown"
 }
@@ -191,6 +239,33 @@ func (a *app) capabilitiesCommand() *cobra.Command {
 			"mutations": []string{"record.create", "record.update", "record.upsert", "record.delete", "batch", "collection.create", "collection.update", "collection.delete", "backup.create", "backup.restore", "backup.delete"},
 			"deferred":  []string{"settings", "mail", "realtime", "raw-http", "sql", "runtime-management", "mcp"},
 			"approval":  "immutable-plan-then-apply",
+			"commands": map[string]string{
+				"health":            "pb-agent inspect health",
+				"collections.list":  "pb-agent inspect collections --page PAGE --per-page N",
+				"collections.get":   "pb-agent inspect collection --name NAME",
+				"records.list":      "pb-agent records list --collection NAME --page PAGE --per-page N",
+				"records.get":       "pb-agent records get --collection NAME --id ID",
+				"record.create":     "pb-agent plan record-create --collection NAME --data-file FILE",
+				"record.update":     "pb-agent plan record-update --collection NAME --id ID --data-file FILE",
+				"record.upsert":     "pb-agent plan record-upsert --collection NAME --id ID --data-file FILE",
+				"record.delete":     "pb-agent plan record-delete --collection NAME --id ID",
+				"batch":             "pb-agent plan batch --data-file FILE",
+				"collection.create": "pb-agent plan collection-create --data-file FILE",
+				"collection.update": "pb-agent plan collection-update --name NAME --data-file FILE",
+				"collection.delete": "pb-agent plan collection-delete --name NAME",
+				"backup.create":     "pb-agent plan backup-create --name FILE",
+				"backup.restore":    "pb-agent plan backup-restore --name FILE",
+				"backup.delete":     "pb-agent plan backup-delete --name FILE",
+				"apply":             "pb-agent apply --plan PLAN_ID",
+				"files.download":    "pb-agent files download --collection NAME --record ID --filename FILE --output PATH",
+				"logs.list":         "pb-agent inspect logs --page PAGE --per-page N",
+				"backups.list":      "pb-agent inspect backups",
+				"auth.test":         "pb-agent auth test --collection NAME --mode guest|configured",
+			},
+			"requirements": map[string]string{
+				"batch":         "PocketBase batch.enabled must be true",
+				"record.upsert": "PocketBase batch.enabled must be true",
+			},
 		}, nil, "", nil
 	})
 	return cmd
@@ -552,13 +627,17 @@ func (a *app) planRecordCommand(use, operation, method string, risk policy.Risk)
 	var collection, id, dataFile string
 	cmd := &cobra.Command{Use: use, Args: cobra.NoArgs}
 	cmd.Flags().StringVar(&collection, "collection", "", "collection name")
-	cmd.Flags().StringVar(&id, "id", "", "record ID")
-	cmd.Flags().StringVar(&dataFile, "data-file", "", "JSON file path or - for stdin")
+	if method != http.MethodPost {
+		cmd.Flags().StringVar(&id, "id", "", "record ID")
+	}
+	if method != http.MethodDelete {
+		cmd.Flags().StringVar(&dataFile, "data-file", "", "JSON file path or - for stdin")
+	}
 	cmd.RunE = a.run("plan."+operation, func() (any, []string, string, error) {
 		if collection == "" {
 			return nil, nil, "", output.Usage("--collection is required")
 		}
-		needsID := method == http.MethodPatch || method == http.MethodDelete
+		needsID := method == http.MethodPatch || method == http.MethodPut || method == http.MethodDelete
 		if needsID && id == "" {
 			return nil, nil, "", output.Usage("--id is required")
 		}
@@ -571,6 +650,18 @@ func (a *app) planRecordCommand(use, operation, method string, risk policy.Risk)
 				return nil, nil, "", err
 			}
 		}
+		if method == http.MethodPut {
+			var body map[string]any
+			if err := json.Unmarshal(payload, &body); err != nil || body == nil {
+				return nil, nil, "", output.Usage("record upsert data must be a JSON object")
+			}
+			if payloadID, ok := body["id"]; ok && payloadID != id {
+				return nil, nil, "", output.Usage("record upsert data id must match --id")
+			}
+			body["id"] = id
+			payload, _ = json.Marshal(body)
+			preview = security.Redact(body)
+		}
 		base := "/api/collections/" + url.PathEscape(collection) + "/records"
 		path := base
 		preconditionPath := ""
@@ -579,19 +670,50 @@ func (a *app) planRecordCommand(use, operation, method string, risk policy.Risk)
 		if err != nil {
 			return nil, nil, "", err
 		}
-		if id != "" {
+		if method == http.MethodPut {
+			enabled, err := client.BatchEnabled(context.Background())
+			if err != nil {
+				return nil, nil, "", mapPBError(err)
+			}
+			if !enabled {
+				return nil, nil, "", output.Policy("PocketBase batch requests are disabled; enable Settings > Application > Batch requests before using record upsert.", nil)
+			}
+		}
+		if id != "" && method != http.MethodPut {
 			path += "/" + url.PathEscape(id)
 		}
 		if needsID {
 			before, err := client.Record(context.Background(), collection, id)
 			if err != nil {
-				return nil, nil, "", mapPBError(err)
+				var apiErr *pocketbase.APIError
+				if method != http.MethodPut || !errors.As(err, &apiErr) || apiErr.Status != http.StatusNotFound {
+					return nil, nil, "", mapPBError(err)
+				}
+				preconditionPath = base + "/" + url.PathEscape(id)
+				preconditionHash = "missing"
+				preview = map[string]any{"before": nil, "requested": preview}
+			} else {
+				preconditionPath = base + "/" + url.PathEscape(id)
+				preconditionHash, _ = plan.Hash(before)
+				preview = map[string]any{"before": security.Redact(before), "requested": preview}
 			}
-			preconditionPath = path
-			preconditionHash, _ = plan.Hash(before)
-			preview = map[string]any{"before": security.Redact(before), "requested": preview}
 		}
-		created, err := plan.New(operation, name, client.Fingerprint(), connection.Environment, risk, "records."+strings.TrimPrefix(operation, "record."), method, path, payload, preview, preconditionPath, preconditionHash, time.Now())
+		requestMethod := method
+		requestPath := path
+		if method == http.MethodPut {
+			var body any
+			_ = json.Unmarshal(payload, &body)
+			payload, _ = json.Marshal(map[string]any{
+				"requests": []map[string]any{{
+					"method": http.MethodPut,
+					"url":    base,
+					"body":   body,
+				}},
+			})
+			requestMethod = http.MethodPost
+			requestPath = "/api/batch"
+		}
+		created, err := plan.New(operation, name, client.Fingerprint(), connection.Environment, risk, "records."+strings.TrimPrefix(operation, "record."), requestMethod, requestPath, payload, preview, preconditionPath, preconditionHash, time.Now())
 		if err != nil {
 			return nil, nil, "", err
 		}
@@ -606,8 +728,12 @@ func (a *app) planRecordCommand(use, operation, method string, risk policy.Risk)
 func (a *app) planCollectionCommand(use, operation, method string, risk policy.Risk) *cobra.Command {
 	var name, dataFile string
 	cmd := &cobra.Command{Use: use, Args: cobra.NoArgs}
-	cmd.Flags().StringVar(&name, "name", "", "collection name or ID")
-	cmd.Flags().StringVar(&dataFile, "data-file", "", "JSON file path or - for stdin")
+	if method != http.MethodPost {
+		cmd.Flags().StringVar(&name, "name", "", "collection name or ID")
+	}
+	if method != http.MethodDelete {
+		cmd.Flags().StringVar(&dataFile, "data-file", "", "JSON file path or - for stdin")
+	}
 	cmd.RunE = a.run("plan."+operation, func() (any, []string, string, error) {
 		if method != http.MethodPost && name == "" {
 			return nil, nil, "", output.Usage("--name is required")
@@ -698,6 +824,13 @@ func (a *app) planBatchCommand() *cobra.Command {
 		if err != nil {
 			return nil, nil, "", err
 		}
+		enabled, err := client.BatchEnabled(context.Background())
+		if err != nil {
+			return nil, nil, "", mapPBError(err)
+		}
+		if !enabled {
+			return nil, nil, "", output.Policy("PocketBase batch requests are disabled; enable Settings > Application > Batch requests before planning a batch.", nil)
+		}
 		created, err := plan.New("batch", name, client.Fingerprint(), connection.Environment, policy.Destructive, "records.batch", http.MethodPost, "/api/batch", payload, preview, "", "", time.Now())
 		if err != nil {
 			return nil, nil, "", err
@@ -757,12 +890,23 @@ func (a *app) applyCommand() *cobra.Command {
 		if stored.PreconditionPath != "" {
 			raw, err := client.Request(context.Background(), http.MethodGet, stored.PreconditionPath, nil)
 			if err != nil {
-				return nil, nil, "", output.Conflict("target changed or disappeared after planning", nil)
+				var apiErr *pocketbase.APIError
+				if stored.PreconditionHash == "missing" && errors.As(err, &apiErr) && apiErr.Status == http.StatusNotFound {
+					raw = nil
+				} else {
+					return nil, nil, "", output.Conflict("target changed or disappeared after planning", nil)
+				}
 			}
-			current := decode(raw)
-			hash, _ := plan.Hash(current)
-			if hash != stored.PreconditionHash {
-				return nil, nil, "", output.Conflict("target changed after planning", map[string]any{"expected": stored.PreconditionHash, "actual": hash})
+			if stored.PreconditionHash == "missing" {
+				if raw != nil {
+					return nil, nil, "", output.Conflict("target was created after planning", nil)
+				}
+			} else {
+				current := decode(raw)
+				hash, _ := plan.Hash(current)
+				if hash != stored.PreconditionHash {
+					return nil, nil, "", output.Conflict("target changed after planning", map[string]any{"expected": stored.PreconditionHash, "actual": hash})
+				}
 			}
 		}
 		payload, err := stored.Payload()
@@ -985,8 +1129,10 @@ func mapPBError(err error) error {
 	var apiErr *pocketbase.APIError
 	if errors.As(err, &apiErr) {
 		switch apiErr.Status {
-		case http.StatusUnauthorized, http.StatusForbidden:
+		case http.StatusUnauthorized:
 			return output.Auth("PocketBase rejected the configured credentials.")
+		case http.StatusForbidden:
+			return output.Policy(apiErr.Message, security.Redact(apiErr.Data))
 		case http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusUnprocessableEntity:
 			return output.Validation(apiErr.Message, security.Redact(apiErr.Data))
 		default:
@@ -1017,7 +1163,7 @@ func skill(host string) string {
 	return fmt.Sprintf(`---
 name: pb-agent
 description: Safely inspect and modify PocketBase through pb-agent.
-version: 0.1.2
+version: 0.1.3
 host: %s
 ---
 
@@ -1031,6 +1177,11 @@ host: %s
 6. For mutations, create an immutable plan, show its preview, and apply only that plan ID after approval.
 7. Stop on policy denial, compatibility uncertainty, expired plans, stale-state conflicts, or missing authentication.
 8. Verify the structured `+"`ok`"+` and `+"`verified`"+` fields before reporting success.
+
+## Command grammar
+
+Do not infer commands from capability names. Run `+"`pb-agent capabilities`"+` and use the exact command templates in `+"`data.commands`"+`.
+Record upsert and batch require `+"`doctor.data.capabilityProbes.batch`"+` to be `+"`supported`"+`.
 `, host)
 }
 
