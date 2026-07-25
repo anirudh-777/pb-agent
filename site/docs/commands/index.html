@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>pb-agent Commands | PocketBase CLI for AI Agents</title>
+    <meta name="description" content="Command guide for pb-agent reads, records, collections, auth-rule tests, files, logs, backups, reviewable mutation plans, applies, and access grants.">
+    <meta name="theme-color" content="#f6f2ea">
+    <link rel="canonical" href="https://anirudh-777.github.io/pb-agent/docs/commands/">
+    <link rel="stylesheet" href="/pb-agent/assets/styles.css">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="pb-agent command guide">
+    <meta property="og:description" content="Find the PocketBase operation an AI coding agent can safely perform.">
+    <meta property="og:url" content="https://anirudh-777.github.io/pb-agent/docs/commands/">
+    <meta property="og:image" content="https://anirudh-777.github.io/pb-agent/og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "pb-agent command guide",
+        "description": "A guide to the implemented PocketBase reads and plan/apply mutations in pb-agent.",
+        "dateModified": "2026-07-25",
+        "author": {"@type": "Person", "name": "Anirudh Prakash"},
+        "about": ["PocketBase CLI", "AI coding agents", "developer tools"]
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="/pb-agent/"><span class="brand-mark" aria-hidden="true">pb</span><span>pb-agent</span></a>
+        <div class="nav-links"><a href="/pb-agent/docs/">Docs</a><a href="/pb-agent/docs/safety/">Safety</a><a href="https://github.com/anirudh-777/pb-agent">GitHub</a><a class="button coral" href="/pb-agent/docs/getting-started/">Install</a></div>
+      </nav>
+    </header>
+    <main id="main" class="shell">
+      <section class="docs-hero">
+        <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/pb-agent/">Home</a> / <a href="/pb-agent/docs/">Docs</a> / Commands</nav>
+        <p class="eyebrow">Command guide</p>
+        <h1>A bounded PocketBase toolbox for agents.</h1>
+        <p>Use <code>pb-agent capabilities</code> as the machine-readable source of truth. This guide explains the operation families and their safety expectations.</p>
+      </section>
+      <div class="docs-layout">
+        <nav class="docs-nav" aria-label="Documentation navigation">
+          <strong>Documentation</strong>
+          <a href="/pb-agent/docs/">Overview</a>
+          <a href="/pb-agent/docs/getting-started/">Getting started</a>
+          <a href="/pb-agent/docs/safety/">Safety model</a>
+          <a href="/pb-agent/docs/commands/" aria-current="page">Commands</a>
+        </nav>
+        <article class="prose">
+          <h2>Global behavior</h2>
+          <div class="code-block"><div class="code-label">Global options</div><pre>pb-agent [--config PATH] [--connection NAME] [--human] COMMAND</pre></div>
+          <ul>
+            <li><code>--connection</code> selects a named PocketBase connection.</li>
+            <li><code>--config</code> selects a specific <code>pb-agent.yaml</code>.</li>
+            <li><code>--human</code> renders output for a person instead of the JSON contract.</li>
+          </ul>
+
+          <h2>Machine-readable output</h2>
+          <p>Every normal command emits a versioned JSON envelope with <code>schemaVersion</code>, <code>ok</code>, command data, warnings, and a structured error when execution fails. Agents should check <code>ok</code> and operation-specific verification fields before reporting success.</p>
+          <div class="code-block"><div class="code-label">Discover current support</div><pre>pb-agent capabilities
+pb-agent --connection local doctor</pre></div>
+
+          <h2>Connection and diagnostics</h2>
+          <ul>
+            <li><strong>init</strong>: Create a local configuration with one named connection.</li>
+            <li><strong>connection add</strong>: Store a connection and optionally read its token from stdin.</li>
+            <li><strong>connection token-help</strong>: Print human and machine-readable token generation guidance.</li>
+            <li><strong>doctor</strong>: Check health and probe the collections and backups capabilities.</li>
+            <li><strong>capabilities</strong>: Return the implemented reads, mutations, deferred work, and approval model.</li>
+          </ul>
+
+          <h2>Bounded reads</h2>
+          <p>Read commands are designed for inspection rather than unlimited extraction. Paginate deliberately and retrieve only the data needed for the task.</p>
+          <ul>
+            <li><strong>Collections</strong>: List collection schemas or inspect one collection.</li>
+            <li><strong>Records</strong>: List or retrieve records from a named collection.</li>
+            <li><strong>Auth-rule tests</strong>: Test list rules as a guest, configured user, or supplied user.</li>
+            <li><strong>Files</strong>: Download a PocketBase file without overwriting an existing local file.</li>
+            <li><strong>Logs</strong>: Inspect PocketBase request and application logs.</li>
+            <li><strong>Backups</strong>: List available PocketBase backups.</li>
+          </ul>
+          <div class="code-block"><div class="code-label">Example read</div><pre>pb-agent --connection local records list --collection posts</pre></div>
+
+          <h2>Plan/apply mutations</h2>
+          <p>Mutations are split into two commands. First create a plan and review its preview. Then apply that exact plan ID. Do not regenerate a plan merely to avoid a denial or stale-state conflict.</p>
+          <ul>
+            <li><strong>Records</strong>: Create, update, upsert, delete, and batch.</li>
+            <li><strong>Collections</strong>: Create, update, and delete schemas.</li>
+            <li><strong>Backups</strong>: Create, restore, and delete backups.</li>
+          </ul>
+          <div class="code-block"><div class="code-label">Example record update</div><pre>pb-agent --connection local plan record-update \
+  --collection posts \
+  --id RECORD_ID \
+  --data-file update.json
+
+pb-agent apply --plan PLAN_ID</pre></div>
+
+          <h2>Access grants</h2>
+          <p>Staging and production mutations need a short-lived grant that matches the target connection and scope. A grant supplements the mutation plan; it does not replace review or precondition checks.</p>
+
+          <h2>Exit and error behavior</h2>
+          <p>Errors are classified for agents instead of returned as ambiguous text. Policy denial, authentication failure, invalid arguments, compatibility uncertainty, expired plans, and stale-state conflicts should stop the workflow and be reported accurately.</p>
+
+          <h2>Deferred capabilities</h2>
+          <p>The current release does not expose PocketBase settings, mail, realtime, raw HTTP, SQL, process management, or MCP. The absence of raw HTTP and SQL is a safety boundary, not a missing convenience flag.</p>
+          <div class="callout"><strong>Prefer live discovery.</strong>This project is pre-release. Run <code>pb-agent capabilities</code> and <code>pb-agent doctor</code> instead of assuming that a command exists because it appears in a future issue or discussion.</div>
+        </article>
+      </div>
+    </main>
+    <footer class="site-footer"><div class="footer-grid shell"><p class="footer-copy">Need exact flags? Use the CLI help and current capability catalog.</p><div class="footer-links"><a href="/pb-agent/docs/getting-started/">Getting started</a><a href="https://github.com/anirudh-777/pb-agent">Source</a></div></div></footer>
+  </body>
+</html>

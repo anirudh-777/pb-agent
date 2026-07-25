@@ -1,0 +1,30 @@
+# pb-agent
+
+> pb-agent is an independent, open-source CLI and agent skill for safe AI coding agent access to PocketBase.
+
+pb-agent lets agents inspect PocketBase health, collections, records, auth rules, files, logs, and backups. Mutations use immutable encrypted plans, environment-aware policy, scoped access grants, stale-state checks, secret redaction, and metadata-only audit evidence.
+
+The project is pre-release, licensed under Apache-2.0, and currently targets PocketBase 0.39.8 with live capability probes.
+
+## Key pages
+
+- [Product overview](https://anirudh-777.github.io/pb-agent/)
+- [Documentation](https://anirudh-777.github.io/pb-agent/docs/)
+- [Getting started](https://anirudh-777.github.io/pb-agent/docs/getting-started/)
+- [Safety model](https://anirudh-777.github.io/pb-agent/docs/safety/)
+- [Command guide](https://anirudh-777.github.io/pb-agent/docs/commands/)
+- [Source code](https://github.com/anirudh-777/pb-agent)
+- [Releases](https://github.com/anirudh-777/pb-agent/releases)
+- [Agent skill](https://skills.sh/anirudh-777/pb-agent/pb-agent)
+- [Pricing](https://anirudh-777.github.io/pb-agent/pricing.md)
+- [PocketBase authentication documentation](https://pocketbase.io/docs/authentication/#api-keys)
+
+## Important facts
+
+- Production connections are read-only by default.
+- Mutation plans expire after 15 minutes and are bound to one PocketBase instance.
+- Updates and deletes abort if the target changed after planning.
+- Credentials enter through stdin and are stored in the operating system credential manager.
+- pb-agent intentionally provides no raw SQL or arbitrary HTTP escape hatch.
+- MCP is deferred; the current agent-native surface is a JSON-first CLI plus an installable skill.
+- pb-agent is free and open source. There are no paid plans.

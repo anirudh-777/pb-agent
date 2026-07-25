@@ -5,6 +5,11 @@
 immutable plan/apply mutations, environment-aware policy, secret redaction, and
 local audit evidence.
 
+**[Website](https://anirudh-777.github.io/pb-agent/) ·
+[Documentation](https://anirudh-777.github.io/pb-agent/docs/) ·
+[Releases](https://github.com/anirudh-777/pb-agent/releases) ·
+[Agent skill](https://skills.sh/anirudh-777/pb-agent/pb-agent)**
+
 > [!IMPORTANT]
 > The project is pre-release. Its compatibility baseline is PocketBase 0.39.8.
 

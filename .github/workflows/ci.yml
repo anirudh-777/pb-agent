@@ -67,3 +67,12 @@ jobs:
         run: |
           PB_AGENT_INSTALL_DIR="$RUNNER_TEMP/pb-agent-bin" sh install.sh v0.1.0-rc.4
           "$RUNNER_TEMP/pb-agent-bin/pb-agent" version
+
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node scripts/validate-site.mjs

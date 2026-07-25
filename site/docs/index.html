@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>pb-agent Documentation | PocketBase Agent CLI</title>
+    <meta name="description" content="Install, configure, and safely use pb-agent to give AI coding agents structured, reviewable access to PocketBase records, schemas, logs, and backups.">
+    <meta name="theme-color" content="#f6f2ea">
+    <link rel="canonical" href="https://anirudh-777.github.io/pb-agent/docs/">
+    <link rel="stylesheet" href="/pb-agent/assets/styles.css">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="pb-agent documentation">
+    <meta property="og:description" content="Install and operate the safe, agent-first PocketBase CLI.">
+    <meta property="og:url" content="https://anirudh-777.github.io/pb-agent/docs/">
+    <meta property="og:image" content="https://anirudh-777.github.io/pb-agent/og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "pb-agent documentation",
+        "description": "Documentation for installing and safely operating pb-agent with PocketBase.",
+        "dateModified": "2026-07-25",
+        "author": {"@type": "Person", "name": "Anirudh Prakash"},
+        "isPartOf": {"@type": "WebSite", "name": "pb-agent", "url": "https://anirudh-777.github.io/pb-agent/"}
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="/pb-agent/"><span class="brand-mark" aria-hidden="true">pb</span><span>pb-agent</span></a>
+        <div class="nav-links">
+          <a href="/pb-agent/#safety">Safety</a>
+          <a href="/pb-agent/docs/" aria-current="page">Docs</a>
+          <a href="https://github.com/anirudh-777/pb-agent">GitHub</a>
+          <a class="button coral" href="/pb-agent/docs/getting-started/">Install</a>
+        </div>
+      </nav>
+    </header>
+    <main id="main" class="shell">
+      <section class="docs-hero">
+        <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/pb-agent/">Home</a> / Docs</nav>
+        <p class="eyebrow">Documentation</p>
+        <h1>Put an agent to work on PocketBase.</h1>
+        <p>
+          Install the CLI, connect a PocketBase instance, and use bounded reads or
+          immutable plan/apply mutations. Start locally before adding staging or production.
+        </p>
+      </section>
+      <section class="doc-cards" aria-label="Documentation sections">
+        <a class="doc-card" href="/pb-agent/docs/getting-started/">
+          <span>Start here</span>
+          <h2>Install and connect</h2>
+          <p>Install the binary and agent skill, generate a PocketBase token, and verify the connection.</p>
+        </a>
+        <a class="doc-card" href="/pb-agent/docs/safety/">
+          <span>Trust model</span>
+          <h2>Understand the safety boundary</h2>
+          <p>See how credentials, plans, access grants, concurrency checks, and audits work together.</p>
+        </a>
+        <a class="doc-card" href="/pb-agent/docs/commands/">
+          <span>Reference</span>
+          <h2>Find the right command</h2>
+          <p>Browse the implemented read and mutation families, output contract, and deferred capabilities.</p>
+        </a>
+        <a class="doc-card" href="https://github.com/anirudh-777/pb-agent/tree/main/docs">
+          <span>Repository docs</span>
+          <h2>Read implementation notes</h2>
+          <p>Authentication, compatibility, threat model, contributing, release, and security policies.</p>
+        </a>
+      </section>
+      <section class="section prose">
+        <h2>What is pb-agent?</h2>
+        <p>
+          pb-agent is a local command-line gateway between AI coding agents and PocketBase.
+          It gives agents a versioned JSON contract for inspection and a constrained mutation
+          workflow for records, collections, batches, and backups. Safety policy is enforced
+          in the binary rather than delegated to an agent prompt.
+        </p>
+        <div class="callout">
+          <strong>Current status</strong>
+          pb-agent is pre-release software with a PocketBase 0.39.8 compatibility baseline.
+          Run <code>pb-agent doctor</code> against each target instance before relying on a capability.
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-grid shell">
+        <p class="footer-copy">Independent open-source tooling for safe AI agent access to PocketBase. Not affiliated with PocketBase.</p>
+        <div class="footer-links"><a href="/pb-agent/">Home</a><a href="/pb-agent/docs/">Docs</a><a href="https://github.com/anirudh-777/pb-agent">GitHub</a></div>
+      </div>
+    </footer>
+  </body>
+</html>
