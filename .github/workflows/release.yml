@@ -32,7 +32,7 @@ jobs:
       - uses: sigstore/cosign-installer@v3
       - name: Sign checksums
         run: cosign sign-blob --yes dist/checksums.txt --bundle dist/checksums.sigstore.json
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/checksums.txt
       - name: Build npm packages
