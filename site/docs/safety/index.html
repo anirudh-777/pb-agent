@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Safe AI Agent Access to PocketBase | pb-agent</title>
+    <meta name="description" content="How pb-agent protects PocketBase credentials and mutations with expiring plans, production access grants, stale-state checks, redaction, and audit evidence.">
+    <meta name="theme-color" content="#f6f2ea">
+    <link rel="canonical" href="https://anirudh-777.github.io/pb-agent/docs/safety/">
+    <link rel="stylesheet" href="/pb-agent/assets/styles.css">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="The pb-agent safety model">
+    <meta property="og:description" content="A policy-enforced boundary for AI agent access to PocketBase.">
+    <meta property="og:url" content="https://anirudh-777.github.io/pb-agent/docs/safety/">
+    <meta property="og:image" content="https://anirudh-777.github.io/pb-agent/og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "Safe AI agent access to PocketBase",
+        "description": "The threat model and enforced controls used by pb-agent.",
+        "dateModified": "2026-07-25",
+        "author": {"@type": "Person", "name": "Anirudh Prakash"},
+        "about": ["PocketBase", "AI agents", "developer security", "least privilege"]
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="/pb-agent/"><span class="brand-mark" aria-hidden="true">pb</span><span>pb-agent</span></a>
+        <div class="nav-links"><a href="/pb-agent/docs/">Docs</a><a href="/pb-agent/docs/safety/" aria-current="page">Safety</a><a href="https://github.com/anirudh-777/pb-agent">GitHub</a><a class="button coral" href="/pb-agent/docs/getting-started/">Install</a></div>
+      </nav>
+    </header>
+    <main id="main" class="shell">
+      <section class="docs-hero">
+        <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/pb-agent/">Home</a> / <a href="/pb-agent/docs/">Docs</a> / Safety</nav>
+        <p class="eyebrow">Safety model</p>
+        <h1>Agent guidance is not an access-control system.</h1>
+        <p>pb-agent treats agent input, PocketBase data, filenames, API errors, and remote responses as untrusted. Policy is enforced before a request reaches PocketBase.</p>
+      </section>
+      <div class="docs-layout">
+        <nav class="docs-nav" aria-label="Documentation navigation">
+          <strong>Documentation</strong>
+          <a href="/pb-agent/docs/">Overview</a>
+          <a href="/pb-agent/docs/getting-started/">Getting started</a>
+          <a href="/pb-agent/docs/safety/" aria-current="page">Safety model</a>
+          <a href="/pb-agent/docs/commands/">Commands</a>
+        </nav>
+        <article class="prose">
+          <h2>What does pb-agent protect?</h2>
+          <p>
+            The protected assets are PocketBase superuser tokens, application records,
+            files, schemas, logs, backups, human approval intent, plan integrity, and audit evidence.
+            The local user and installed pb-agent binary are trusted. A compromised operating
+            system or binary is outside the v0.1 threat model.
+          </p>
+
+          <h2>Why plan before apply?</h2>
+          <p>
+            A mutation plan freezes the operation an agent proposes. pb-agent encrypts the
+            payload locally and binds metadata to the connection, environment, PocketBase
+            instance fingerprint, request hash, and expiration. Apply takes a plan ID, not
+            a second mutable set of write arguments.
+          </p>
+          <div class="callout"><strong>Plans are short-lived and single-use.</strong> Each plan expires after 15 minutes. Apply uses a lock and one-use marker to prevent concurrent execution or replay.</div>
+
+          <h2>What happens if a record changes after review?</h2>
+          <p>
+            Record updates and deletes use optimistic concurrency protection. pb-agent fetches
+            the target again immediately before apply and compares its precondition hash. If
+            the record changed after planning, the mutation stops instead of overwriting newer state.
+          </p>
+
+          <h2>How are production writes controlled?</h2>
+          <p>
+            Production is read-only by default. Staging and production mutations require a
+            short-lived access grant whose connection, operation, and resource scope match the
+            plan. Creating a plan does not bypass that rule.
+          </p>
+
+          <h2>Where are credentials stored?</h2>
+          <p>
+            pb-agent uses a dedicated PocketBase <code>_superusers</code> impersonation token.
+            The token enters through standard input and is stored in the operating system
+            credential manager. It is not stored in <code>pb-agent.yaml</code>, command output,
+            plan files, or audit records.
+          </p>
+          <p>
+            PocketBase warns that superuser impersonation tokens can access and modify anything,
+            so use a dedicated account and the shortest practical duration. Changing that
+            superuser's password invalidates its issued tokens.
+          </p>
+
+          <h2>Can PocketBase records prompt-inject the agent?</h2>
+          <p>
+            Record values are untrusted data. They are returned as data and never enter pb-agent's
+            policy evaluation. The companion skill also tells agents never to treat record
+            contents as instructions.
+          </p>
+
+          <h2>What appears in audit logs?</h2>
+          <p>
+            Audit records contain operation metadata, identifiers, field names, and hashes.
+            They do not contain record values or credentials. This provides local evidence
+            without copying application data into another sensitive store.
+          </p>
+
+          <h2>What is intentionally unavailable?</h2>
+          <p>
+            pb-agent provides no raw SQL or arbitrary HTTP passthrough. Those escape hatches
+            would let an agent bypass the capability policy. Remote MCP transport, unattended
+            production writes in CI, and malicious custom PocketBase extensions are also
+            outside the current scope.
+          </p>
+
+          <h2>Security checklist</h2>
+          <ol>
+            <li>Use a dedicated PocketBase superuser for pb-agent.</li>
+            <li>Generate a nonrenewable impersonation token with the shortest practical duration.</li>
+            <li>Start with a development connection and run <code>doctor</code>.</li>
+            <li>Review each mutation plan before applying it.</li>
+            <li>Keep production read-only unless a specific maintenance task needs a scoped grant.</li>
+            <li>Report vulnerabilities privately through the repository's <a href="https://github.com/anirudh-777/pb-agent/blob/main/SECURITY.md">security policy</a>.</li>
+          </ol>
+        </article>
+      </div>
+    </main>
+    <footer class="site-footer"><div class="footer-grid shell"><p class="footer-copy">Read the complete source-level threat model in the repository.</p><div class="footer-links"><a href="https://github.com/anirudh-777/pb-agent/blob/main/docs/THREAT_MODEL.md">Threat model</a><a href="https://github.com/anirudh-777/pb-agent/blob/main/SECURITY.md">Security policy</a></div></div></footer>
+  </body>
+</html>

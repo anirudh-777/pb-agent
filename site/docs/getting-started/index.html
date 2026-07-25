@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Install pb-agent for PocketBase | Getting Started</title>
+    <meta name="description" content="Install pb-agent, add its AI agent skill, generate a PocketBase superuser impersonation token, and verify a safe local development connection.">
+    <meta name="theme-color" content="#f6f2ea">
+    <link rel="canonical" href="https://anirudh-777.github.io/pb-agent/docs/getting-started/">
+    <link rel="stylesheet" href="/pb-agent/assets/styles.css">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Install pb-agent for PocketBase">
+    <meta property="og:description" content="Connect an AI coding agent to PocketBase with a reviewable safety boundary.">
+    <meta property="og:url" content="https://anirudh-777.github.io/pb-agent/docs/getting-started/">
+    <meta property="og:image" content="https://anirudh-777.github.io/pb-agent/og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to install and connect pb-agent to PocketBase",
+        "description": "Install pb-agent, create a local connection, store a PocketBase impersonation token, and verify the connection.",
+        "step": [
+          {"@type": "HowToStep", "name": "Install pb-agent", "text": "Run the official installer on macOS or Linux."},
+          {"@type": "HowToStep", "name": "Install the agent skill", "text": "Use the skills CLI to install the pb-agent workflow for supported coding agents."},
+          {"@type": "HowToStep", "name": "Create a connection", "text": "Initialize a development connection for the PocketBase URL."},
+          {"@type": "HowToStep", "name": "Generate and store a token", "text": "Generate a short-lived superuser impersonation token and pipe it to pb-agent through standard input."},
+          {"@type": "HowToStep", "name": "Verify capabilities", "text": "Run doctor and capabilities before performing operations."}
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="/pb-agent/"><span class="brand-mark" aria-hidden="true">pb</span><span>pb-agent</span></a>
+        <div class="nav-links"><a href="/pb-agent/docs/">Docs</a><a href="/pb-agent/docs/safety/">Safety</a><a href="https://github.com/anirudh-777/pb-agent">GitHub</a><a class="button coral" href="#install">Install</a></div>
+      </nav>
+    </header>
+    <main id="main" class="shell">
+      <section class="docs-hero">
+        <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/pb-agent/">Home</a> / <a href="/pb-agent/docs/">Docs</a> / Getting started</nav>
+        <p class="eyebrow">Getting started</p>
+        <h1>Connect an agent to PocketBase in five steps.</h1>
+        <p>Start with a local development instance. The setup keeps credentials out of command arguments and gives the agent a machine-readable capability check.</p>
+      </section>
+      <div class="docs-layout">
+        <nav class="docs-nav" aria-label="Documentation navigation">
+          <strong>Documentation</strong>
+          <a href="/pb-agent/docs/">Overview</a>
+          <a href="/pb-agent/docs/getting-started/" aria-current="page">Getting started</a>
+          <a href="/pb-agent/docs/safety/">Safety model</a>
+          <a href="/pb-agent/docs/commands/">Commands</a>
+        </nav>
+        <article class="prose">
+          <h2 id="install">1. Install the CLI</h2>
+          <p>The installer detects macOS or Linux and the current CPU architecture, downloads the matching GitHub release, and verifies its published SHA-256 checksum.</p>
+          <div class="code-block"><div class="code-label">macOS or Linux</div><pre>curl -fsSL https://raw.githubusercontent.com/anirudh-777/pb-agent/main/install.sh | sh</pre></div>
+          <p>If the installer uses <code>~/.local/bin</code>, add that directory to your shell <code>PATH</code>. You can also <a href="https://github.com/anirudh-777/pb-agent/releases">download a release archive</a> or build from source with Go.</p>
+          <div class="code-block"><div class="code-label">Verify the binary</div><pre>pb-agent version</pre></div>
+
+          <h2>2. Install the agent skill</h2>
+          <p>The skill teaches supported coding agents to inspect capabilities, treat records as untrusted data, preview mutations, and verify structured results.</p>
+          <div class="code-block"><div class="code-label">Global skill install</div><pre>npx skills add anirudh-777/pb-agent --skill pb-agent -g -y</pre></div>
+
+          <h2>3. Initialize a local connection</h2>
+          <div class="code-block"><div class="code-label">Development connection</div><pre>pb-agent init \
+  --name local \
+  --url http://127.0.0.1:8090 \
+  --environment development</pre></div>
+          <p>Valid environments are <code>development</code>, <code>test</code>, <code>staging</code>, and <code>production</code>. The environment controls mutation policy.</p>
+
+          <h2>4. Generate and store a PocketBase token</h2>
+          <p>
+            PocketBase does not provide traditional API keys. It supports nonrenewable
+            <code>_superusers</code> impersonation tokens for internal server-to-server use.
+            Create a dedicated superuser and use the shortest practical token duration.
+          </p>
+          <ol>
+            <li>Open the PocketBase Dashboard.</li>
+            <li>Open <strong>Collections</strong>, then select <code>_superusers</code>.</li>
+            <li>Select the dedicated superuser record used by pb-agent.</li>
+            <li>Open <strong>Impersonate</strong>, choose a short duration, and generate the token.</li>
+          </ol>
+          <p>Print these steps at any time with:</p>
+          <div class="code-block"><div class="code-label">Human-readable token help</div><pre>pb-agent --human connection token-help</pre></div>
+          <p>Place the token in a temporary environment variable and pipe it through standard input:</p>
+          <div class="code-block"><div class="code-label">Store in the OS credential manager</div><pre>printf '%s' "$POCKETBASE_SUPERUSER_TOKEN" | pb-agent connection add \
+  --name local \
+  --url http://127.0.0.1:8090 \
+  --environment development \
+  --token-stdin</pre></div>
+          <div class="callout"><strong>Never paste the token into agent chat.</strong> Do not pass it as a command argument or place it in <code>pb-agent.yaml</code>. Change the dedicated superuser password to invalidate issued tokens.</div>
+
+          <h2>5. Verify the connection</h2>
+          <div class="code-block"><div class="code-label">Capability probes</div><pre>pb-agent --human --connection local doctor
+pb-agent --connection local capabilities</pre></div>
+          <p>A healthy doctor response identifies the connection, environment, instance fingerprint, and support status for health, collections, and backups.</p>
+
+          <h2>Make your first bounded read</h2>
+          <div class="code-block"><div class="code-label">List records</div><pre>pb-agent --connection local records list --collection posts</pre></div>
+          <p>Every normal command returns a versioned JSON envelope. Add <code>--human</code> when a person, rather than an agent, is reading the output.</p>
+
+          <h2>Plan a mutation</h2>
+          <div class="code-block"><div class="code-label">Create and apply one immutable plan</div><pre>printf '{"title":"Hello"}' &gt; /tmp/post.json
+
+pb-agent --connection local plan record-create \
+  --collection posts \
+  --data-file /tmp/post.json
+
+pb-agent apply --plan pln_REVIEWED_PLAN_ID</pre></div>
+          <p>Review the plan preview before apply. The plan is encrypted locally, expires after 15 minutes, and is bound to the target instance.</p>
+        </article>
+      </div>
+    </main>
+    <footer class="site-footer"><div class="footer-grid shell"><p class="footer-copy">pb-agent is independent open-source software and is not affiliated with PocketBase.</p><div class="footer-links"><a href="/pb-agent/docs/">Docs</a><a href="/pb-agent/docs/safety/">Safety</a><a href="https://github.com/anirudh-777/pb-agent">GitHub</a></div></div></footer>
+  </body>
+</html>

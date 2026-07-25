@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Agent Access for PocketBase | pb-agent</title>
+    <meta name="description" content="Give AI coding agents safe, reviewable access to PocketBase. Open-source CLI with plan-then-apply mutations, policy controls, secret redaction, and audit logs.">
+    <meta name="author" content="pb-agent contributors">
+    <meta name="theme-color" content="#f6f2ea">
+    <link rel="canonical" href="https://anirudh-777.github.io/pb-agent/">
+    <link rel="stylesheet" href="/pb-agent/assets/styles.css">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="pb-agent">
+    <meta property="og:title" content="Safe PocketBase access for AI coding agents">
+    <meta property="og:description" content="Let agents inspect, test, and change PocketBase through a reviewable, policy-enforced CLI.">
+    <meta property="og:url" content="https://anirudh-777.github.io/pb-agent/">
+    <meta property="og:image" content="https://anirudh-777.github.io/pb-agent/og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Safe PocketBase access for AI coding agents">
+    <meta name="twitter:description" content="Plan, review, and audit PocketBase changes made by coding agents.">
+    <meta name="twitter:image" content="https://anirudh-777.github.io/pb-agent/og.png">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "SoftwareApplication",
+            "name": "pb-agent",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "macOS, Linux, Windows",
+            "description": "An open-source, agent-first command-line gateway for safe PocketBase development and testing operations.",
+            "url": "https://anirudh-777.github.io/pb-agent/",
+            "downloadUrl": "https://github.com/anirudh-777/pb-agent/releases",
+            "softwareVersion": "0.1.0-rc.4",
+            "license": "https://www.apache.org/licenses/LICENSE-2.0",
+            "isAccessibleForFree": true,
+            "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+            "codeRepository": "https://github.com/anirudh-777/pb-agent",
+            "author": {
+              "@type": "Person",
+              "name": "Anirudh Prakash",
+              "url": "https://github.com/anirudh-777"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is pb-agent?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "pb-agent is an open-source CLI and agent skill that gives AI coding agents structured access to PocketBase. It supports bounded reads and reviewable plan-then-apply mutations while enforcing environment-aware safety policy."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Why use pb-agent instead of a PocketBase MCP server?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "pb-agent keeps safety policy in a local capability kernel that works across agent hosts. Its JSON-first CLI is portable, easy to test, and does not depend on one agent protocol. MCP can be added later as a thin adapter."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can an AI agent write to a production PocketBase instance?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Production connections are read-only by default. A mutation requires an immutable expiring plan plus a short-lived, scoped access grant."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does pb-agent store PocketBase credentials?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "pb-agent accepts a nonrenewable PocketBase superuser impersonation token through standard input and stores it in the operating system credential manager. Tokens are not written to configuration, plans, output, or audit logs."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="/pb-agent/" aria-label="pb-agent home">
+          <span class="brand-mark" aria-hidden="true">pb</span>
+          <span>pb-agent</span>
+        </a>
+        <div class="nav-links">
+          <a href="#safety">Safety</a>
+          <a href="#workflow">Workflow</a>
+          <a href="/pb-agent/docs/">Docs</a>
+          <a href="https://github.com/anirudh-777/pb-agent">GitHub</a>
+          <a class="button coral" href="/pb-agent/docs/getting-started/">Install</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero shell">
+        <div>
+          <p class="eyebrow">Open source · Agent first · PocketBase</p>
+          <h1>Give your agent PocketBase access. Keep control.</h1>
+          <p class="hero-copy">
+            pb-agent is a safe PocketBase CLI for AI coding agents. Let agents inspect
+            collections, test rules, manage records, and prepare schema changes without
+            handing them unrestricted database access.
+          </p>
+          <div class="actions">
+            <a class="button coral" href="/pb-agent/docs/getting-started/">Install pb-agent</a>
+            <a class="button secondary" href="https://github.com/anirudh-777/pb-agent">View source on GitHub</a>
+          </div>
+          <p class="microcopy">Apache-2.0 · Local-first · Pre-release · PocketBase 0.39.8 baseline</p>
+        </div>
+        <div class="terminal" role="img" aria-label="Example pb-agent plan and apply workflow">
+          <div class="terminal-bar"><span></span><span></span><span></span>agent session</div>
+          <pre><span class="prompt">$</span> pb-agent --connection local doctor
+<span class="dim">✓ health           supported
+✓ collections      supported
+✓ backups          supported</span>
+
+<span class="prompt">$</span> pb-agent plan record-update \
+    --collection posts --id rec_42 \
+    --data-file update.json
+
+<span class="coral-text">plan</span>     pln_7e2f
+<span class="dim">expires  15 minutes
+changes  title, published</span>
+
+<span class="prompt">$</span> pb-agent apply --plan pln_7e2f
+<span class="dim">✓ precondition verified
+✓ mutation applied
+✓ audit evidence written</span></pre>
+        </div>
+      </section>
+
+      <section class="proof-strip" aria-label="Product facts">
+        <div class="proof-grid shell">
+          <div class="proof-item"><strong>JSON-first</strong><span>Stable envelopes for agents</span></div>
+          <div class="proof-item"><strong>Plan, then apply</strong><span>No mutable write arguments</span></div>
+          <div class="proof-item"><strong>Read-only production</strong><span>Until a scoped grant exists</span></div>
+          <div class="proof-item"><strong>Local audit evidence</strong><span>Metadata and hashes, not values</span></div>
+        </div>
+      </section>
+
+      <section class="section shell" id="workflow">
+        <div class="section-heading">
+          <p class="eyebrow">The working model</p>
+          <h2>Useful enough for development. Restrained enough for real data.</h2>
+          <p>
+            Agents need more than read-only context to finish features and tests. pb-agent
+            gives them the operations they need, then puts a durable boundary around every write.
+          </p>
+        </div>
+        <div class="cards">
+          <article class="card">
+            <span class="number">01</span>
+            <h3>Inspect with bounds</h3>
+            <p>List collections, records, logs, and backups through paginated commands with structured output.</p>
+          </article>
+          <article class="card">
+            <span class="number">02</span>
+            <h3>Review one fixed plan</h3>
+            <p>Mutation data is encrypted locally and bound to the target instance, environment, request hash, and expiry.</p>
+          </article>
+          <article class="card">
+            <span class="number">03</span>
+            <h3>Apply with fresh checks</h3>
+            <p>Updates and deletes verify current state immediately before execution, then write metadata-only audit evidence.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section shell split" id="safety">
+        <div class="section-heading">
+          <p class="eyebrow">Safety is executable</p>
+          <h2>Policy lives in the tool, not in the prompt.</h2>
+          <p>
+            A careful system prompt is useful guidance. It is not an access-control boundary.
+            pb-agent applies the same rules no matter which coding agent runs it.
+          </p>
+          <div class="actions">
+            <a class="button secondary" href="/pb-agent/docs/safety/">Read the safety model</a>
+          </div>
+        </div>
+        <div class="feature-list">
+          <article class="feature">
+            <span class="feature-icon">15m</span>
+            <div><h3>Expiring mutation plans</h3><p>Plans expire after 15 minutes, are single-use, and cannot be retargeted.</p></div>
+          </article>
+          <article class="feature">
+            <span class="feature-icon">RO</span>
+            <div><h3>Production is read-only by default</h3><p>Staging and production mutations need an explicit, short-lived grant with matching scope.</p></div>
+          </article>
+          <article class="feature">
+            <span class="feature-icon">KEY</span>
+            <div><h3>Credentials stay out of agent output</h3><p>Tokens enter through stdin, live in the OS keychain, and are recursively redacted from responses.</p></div>
+          </article>
+          <article class="feature">
+            <span class="feature-icon">Δ</span>
+            <div><h3>Stale writes stop</h3><p>Optimistic concurrency checks abort updates and deletes when a target changed after planning.</p></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section shell">
+        <div class="section-heading">
+          <p class="eyebrow">Choose the right boundary</p>
+          <h2>Not another broad database tool.</h2>
+          <p>
+            pb-agent is designed for agent-driven PocketBase work. It intentionally omits
+            raw SQL and arbitrary HTTP so safety controls cannot be bypassed.
+          </p>
+        </div>
+        <div class="comparison-wrap">
+          <table class="comparison">
+            <thead>
+              <tr><th>Capability</th><th>pb-agent</th><th>Generic MCP server</th><th>Ad hoc SDK script</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Works across coding agents</td><td class="yes">Yes, via CLI + skill</td><td>Only MCP-capable hosts</td><td>Manual integration</td></tr>
+              <tr><td>Immutable write preview</td><td class="yes">Built in</td><td class="no">Implementation-dependent</td><td class="no">Build it yourself</td></tr>
+              <tr><td>Production read-only default</td><td class="yes">Enforced</td><td class="no">Implementation-dependent</td><td class="no">Build it yourself</td></tr>
+              <tr><td>Stale-state protection</td><td class="yes">Before apply</td><td class="no">Implementation-dependent</td><td class="no">Build it yourself</td></tr>
+              <tr><td>Raw SQL or HTTP escape hatch</td><td class="yes">Intentionally absent</td><td>Often available</td><td>Usually available</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section shell split">
+        <div class="section-heading">
+          <p class="eyebrow">Install once</p>
+          <h2>CLI for capability. Skill for judgment.</h2>
+          <p>
+            The binary enforces policy and talks to PocketBase. The agent skill teaches
+            compatible coding agents how to inspect first, plan writes, request approval,
+            and verify structured results.
+          </p>
+        </div>
+        <div>
+          <div class="code-block">
+            <div class="code-label">Install the CLI · macOS and Linux</div>
+            <pre>curl -fsSL https://raw.githubusercontent.com/anirudh-777/pb-agent/main/install.sh | sh</pre>
+          </div>
+          <div class="code-block stacked-code">
+            <div class="code-label">Install the agent skill</div>
+            <pre>npx skills add anirudh-777/pb-agent --skill pb-agent -g -y</pre>
+          </div>
+          <p class="microcopy">
+            Prefer to inspect before running? Read the
+            <a href="https://github.com/anirudh-777/pb-agent/blob/main/install.sh">installer source</a>
+            or use the release archives directly.
+          </p>
+        </div>
+      </section>
+
+      <section class="section shell">
+        <div class="section-heading">
+          <p class="eyebrow">Common questions</p>
+          <h2>PocketBase agent access, answered.</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>What is pb-agent?</summary>
+            <p>pb-agent is an open-source CLI and agent skill that gives AI coding agents structured access to PocketBase. It supports bounded reads and reviewable plan-then-apply mutations while enforcing environment-aware safety policy.</p>
+          </details>
+          <details>
+            <summary>Why use it instead of a PocketBase MCP server?</summary>
+            <p>A JSON-first CLI works across agent hosts and keeps the safety boundary independent of one protocol. An MCP adapter can still sit on top later, but it should not own policy.</p>
+          </details>
+          <details>
+            <summary>Can an agent write to production?</summary>
+            <p>Not by default. Production connections are read-only until a human creates a short-lived access grant with the required operation and resource scope. The agent still needs an immutable plan.</p>
+          </details>
+          <details>
+            <summary>Does pb-agent store my PocketBase password?</summary>
+            <p>No. It uses a nonrenewable superuser impersonation token and stores it in the operating system credential manager. The token is not written to configuration, output, plans, or audit logs.</p>
+          </details>
+          <details>
+            <summary>Which PocketBase operations are supported?</summary>
+            <p>Reads cover health, collections, records, auth-rule testing, file downloads, logs, and backups. Plan/apply mutations cover records, batches, collections, and backups. Run <code>pb-agent capabilities</code> for the current machine-readable catalog.</p>
+          </details>
+          <details>
+            <summary>Is pb-agent affiliated with PocketBase?</summary>
+            <p>No. pb-agent is an independent open-source project. PocketBase is a trademark of its respective owner.</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="section shell">
+        <div class="cta-panel">
+          <div>
+            <h2>Let the agent finish the PocketBase work.</h2>
+            <p>Start locally, inspect the plan, and keep the boundary explicit.</p>
+          </div>
+          <div class="actions">
+            <a class="button coral" href="/pb-agent/docs/getting-started/">Install pb-agent</a>
+            <a class="button" href="/pb-agent/docs/">Read the docs</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-grid shell">
+        <div>
+          <a class="brand" href="/pb-agent/"><span class="brand-mark" aria-hidden="true">pb</span><span>pb-agent</span></a>
+          <p class="footer-copy">Independent open-source tooling for safe AI agent access to PocketBase. Not affiliated with PocketBase.</p>
+        </div>
+        <div class="footer-links">
+          <a href="/pb-agent/docs/">Docs</a>
+          <a href="https://github.com/anirudh-777/pb-agent/releases">Releases</a>
+          <a href="https://skills.sh/anirudh-777/pb-agent/pb-agent">Agent skill</a>
+          <a href="https://github.com/anirudh-777/pb-agent/blob/main/SECURITY.md">Security</a>
+          <a href="https://github.com/anirudh-777/pb-agent">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
