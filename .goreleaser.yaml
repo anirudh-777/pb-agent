@@ -39,6 +39,9 @@ changelog:
       - "^docs:"
       - "^test:"
 
+release:
+  prerelease: auto
+
 homebrew_casks:
   - name: pb-agent
     ids: [pb-agent]
