@@ -89,7 +89,8 @@ pb-agent apply --plan pln_REVIEWED_PLAN_ID
 ```
 
 Every command emits a versioned JSON envelope. Use `pb-agent capabilities` for
-the machine-readable capability catalog.
+the machine-readable capability catalog and exact command templates; agents
+should not infer CLI grammar from capability names.
 
 ## Safety model
 
@@ -120,6 +121,10 @@ Implemented plan/apply mutations:
 - Record create, update, upsert, delete, and batch
 - Collection create, update, and delete
 - Backup create, restore, and delete
+
+Record upsert uses PocketBase's transactional batch API. Upsert and batch plans
+require **Settings → Application → Batch requests** to be enabled; `doctor`
+reports this as `capabilityProbes.batch`.
 
 Settings, mail, realtime, raw HTTP, SQL, PocketBase process management, and MCP
 are intentionally deferred.

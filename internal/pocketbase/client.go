@@ -174,6 +174,22 @@ func (c *Client) Backups(ctx context.Context) (json.RawMessage, error) {
 	return c.Request(ctx, http.MethodGet, "/api/backups", nil)
 }
 
+func (c *Client) BatchEnabled(ctx context.Context) (bool, error) {
+	raw, err := c.Request(ctx, http.MethodGet, "/api/settings?fields=batch", nil)
+	if err != nil {
+		return false, err
+	}
+	var settings struct {
+		Batch struct {
+			Enabled bool `json:"enabled"`
+		} `json:"batch"`
+	}
+	if err := json.Unmarshal(raw, &settings); err != nil {
+		return false, err
+	}
+	return settings.Batch.Enabled, nil
+}
+
 func (c *Client) DownloadFile(ctx context.Context, collection, record, filename string, writer io.Writer) error {
 	path := "/api/files/" + url.PathEscape(collection) + "/" + url.PathEscape(record) + "/" + url.PathEscape(filename)
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil)

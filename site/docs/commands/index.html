@@ -67,8 +67,8 @@ pb-agent --connection local doctor</pre></div>
           <ul>
             <li><strong>connection add URL</strong>: Securely prompt for a token, verify it, store it in the OS credential manager, and create or update the configuration.</li>
             <li><strong>connection token-help</strong>: Print human and machine-readable token generation guidance.</li>
-            <li><strong>doctor</strong>: Check health and probe the collections and backups capabilities.</li>
-            <li><strong>capabilities</strong>: Return the implemented reads, mutations, deferred work, and approval model.</li>
+            <li><strong>doctor</strong>: Check health and probe collections, backups, and whether PocketBase batch requests are enabled.</li>
+            <li><strong>capabilities</strong>: Return implemented reads, mutations, exact command templates, server requirements, deferred work, and the approval model.</li>
           </ul>
 
           <h2>Bounded reads</h2>
@@ -90,6 +90,7 @@ pb-agent --connection local doctor</pre></div>
             <li><strong>Collections</strong>: Create, update, and delete schemas.</li>
             <li><strong>Backups</strong>: Create, restore, and delete backups.</li>
           </ul>
+          <div class="callout"><strong>Batch prerequisite.</strong> Record upsert and batch plans require <em>Settings → Application → Batch requests</em> to be enabled in PocketBase. Check <code>doctor.data.capabilityProbes.batch</code> before planning either operation.</div>
           <div class="code-block"><div class="code-label">Example record update</div><pre>pb-agent --connection local plan record-update \
   --collection posts \
   --id RECORD_ID \
